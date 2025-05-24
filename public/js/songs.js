@@ -233,6 +233,32 @@ window.addEventListener('click', (e) => {
     }
 });
 
+async function logout() {
+    try {
+        // Asumiendo que tu archivo logout.php está en la carpeta 'api'
+        // y que API_URL está configurada correctamente al inicio de este archivo (ej. '../../api')
+        const res = await fetch(`${API_URL}/logout.php`, {
+            method: 'POST' // Se recomienda POST para cerrar sesión
+        });
+
+        // Parsear la respuesta del servidor (debería ser un JSON como {'message': 'Sesión cerrada'})
+        const data = await res.json();
+
+        if (res.ok) { // res.ok es true si la respuesta HTTP es 200-299
+            alert(data.message || 'Sesión cerrada exitosamente.');
+            window.location.href = 'login.html'; // Redirige al usuario a la página de inicio de sesión
+        } else {
+            // Manejar errores de respuesta del servidor (ej. 401 Unauthorized, 500 Internal Server Error)
+            alert(data.error || 'Error al cerrar sesión. Inténtalo de nuevo.');
+            console.error('Error al cerrar sesión (respuesta del servidor):', data);
+        }
+    } catch (error) {
+        // Manejar errores de red o cualquier otro error durante el fetch
+        console.error('Error de conexión al intentar cerrar sesión:', error);
+        alert('No se pudo conectar con el servidor para cerrar sesión.');
+    }
+}
+
 // (Opcional) Listener para resetear el botón si se borran los campos manualmente
 // Considera añadir un botón "Cancelar Edición" si la UI se vuelve más compleja
 titleInput.addEventListener('input', () => {
