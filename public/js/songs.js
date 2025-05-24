@@ -119,8 +119,16 @@ async function saveSong() { // Esta función reemplaza a addSong y manejará tam
         alert('Por favor, completa todos los campos para guardar la canción.');
         return;
     }
+
+
 if (!/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be|spotify\.com|open\.spotify\.com|baidu\.com)\/.+$/.test(data.link) && data.link) {
     alert('El enlace debe ser de YouTube, Spotify o Baidu.');
+    return;
+}
+
+
+if ((data.year < 1700 || data.year > 2025) && data.year) {
+    alert(`Por favor, introduce un año válido entre 1700 y 2025.`);
     return;
 }
 
