@@ -1,6 +1,8 @@
-// js/app.js
+// js/songs.js (anteriormente app.js)
 
-const API_URL = '../api';
+const API_URL = '../api'; // Ajustado según tu estructura de carpetas
+// Asegúrate de que esta URL sea correcta. Si songs.html está en `public/`
+// y la carpeta `api` está al mismo nivel que `public/`, entonces `../../api` es correcto.
 
 // Elementos del DOM
 const songsSection = document.getElementById('songs');
@@ -8,6 +10,15 @@ const loadingMessage = document.getElementById('loadingMessage');
 const songList = document.getElementById('songList');
 const songModal = document.getElementById('songModal');
 const closeModalBtn = document.getElementById('closeModal');
+
+const titleInput = document.getElementById('title');
+const artistInput = document.getElementById('artist');
+const albumInput = document.getElementById('album');
+const yearInput = document.getElementById('year');
+const linkInput = document.getElementById('link');
+const songIdToEditInput = document.getElementById('songIdToEdit'); // Nuevo: Referencia al input oculto
+const saveSongBtn = document.getElementById('saveSongBtn'); // Nuevo: Referencia al botón "Agregar/Actualizar"
+
 
 // --- Session Check and Page Initialization ---
 async function checkAuthAndLoadSongs() {
@@ -36,30 +47,43 @@ async function checkAuthAndLoadSongs() {
 document.addEventListener('DOMContentLoaded', checkAuthAndLoadSongs);
 
 
-// --- Existing Functions (Adapted to use the new structure) ---
-
-async function logout() {
-    try {
-        const res = await fetch(`${API_URL}/logout.php`);
-        const result = await res.json();
-
-        if (res.ok) {
-            alert(result.message || 'Sesión cerrada exitosamente.');
-            window.location.href = 'login.html'; // Redirect to login after logout
-        } else {
-            alert(result.error || 'Error al cerrar sesión.');
-        }
-    } catch (error) {
-        console.error('Error de conexión al cerrar sesión:', error);
-        alert('Error de conexión con el servidor al cerrar sesión.');
-    }
+// --- Helper Functions for Form ---
+function getSongFormData() {
+    return {
+        title: titleInput.value.trim(),
+        artist: artistInput.value.trim(),
+        album: albumInput.value.trim(),
+        year: parseInt(yearInput.value),
+        link: linkInput.value.trim(),
+    };
 }
+
+function fillForm(data) {
+    titleInput.value = data.title;
+    artistInput.value = data.artist;
+    albumInput.value = data.album;
+    yearInput.value = data.year;
+    linkInput.value = data.link;
+}
+
+function clearForm() {
+    titleInput.value = '';
+    artistInput.value = '';
+    albumInput.value = '';
+    yearInput.value = '';
+    linkInput.value = '';
+    songIdToEditInput.value = ''; // Limpiar el ID oculto
+    saveSongBtn.textContent = 'Agregar'; // Restablecer el texto del botón
+}
+
+
+// --- CRUD Operations (songs) ---
 
 async function loadSongs() {
     try {
         const res = await fetch(`${API_URL}/songs.php`);
         const songs = await res.json();
-        
+
         songList.innerHTML = ''; // Clear existing list
         if (songs.length === 0) {
             songList.innerHTML = '<p style="text-align: center; color: #666;">No hay canciones registradas. ¡Añade una!</p>';
@@ -67,7 +91,7 @@ async function loadSongs() {
         }
 
         songs.forEach(s => {
-            const card = document.createElement('li'); // Changed to <li> for semantic correctness within <ul>
+            const card = document.createElement('li');
             card.className = 'song-card';
             card.innerHTML = `
                 <strong>${s.title}</strong><br>
@@ -86,138 +110,11 @@ async function loadSongs() {
     }
 }
 
-function showDetails(s) {
-    document.getElementById('modalTitle').textContent = s.title;
-    document.getElementById('modalArtist').textContent = s.artist;
-    document.getElementById('modalAlbum').textContent = s.album;
-    document.getElementById('modalYear').textContent = s.year;
-    const linkElement = document.getElementById('modalLink');
-    linkElement.href = s.link;
-    linkElement.textContent = s.link;
-
-    songModal.style.display = 'flex'; // Use flex to center
-}
-
-async function addSong() {
-    const title = document.getElementById('title').value.trim();
-    const artist = document.getElementById('artist').value.trim();
-    const album = document.getElementById('album').value.trim();
-    const year = parseInt(document.getElementById('year').value);
-    const link = document.getElementById('link').value.trim();
-
-    // Basic client-side validation for adding song
-    if (!title || !artist || !album || isNaN(year) || !link) {
-        alert('Por favor, completa todos los campos para añadir una canción.');
-        return;
-    }
-    if (!/^https?:\/\/.+\..+/.test(link)) { // Simple URL regex
-        alert('Por favor, introduce un enlace válido (debe empezar con http:// o https://).');
-        return;
-    }
-
-    const data = { title, artist, album, year, link };
-
-    try {
-        const res = await fetch(`${API_URL}/songs.php`, {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify(data)
-        });
-
-        if (res.ok) {
-            alert('Canción agregada exitosamente.');
-            // Clear form fields
-            document.getElementById('title').value = '';
-            document.getElementById('artist').value = '';
-            document.getElementById('album').value = '';
-            document.getElementById('year').value = '';
-            document.getElementById('link').value = '';
-            loadSongs(); // Reload songs to show the new one
-        } else {
-            const errorData = await res.json();
-            alert(errorData.error || 'Error al agregar la canción.');
-        }
-    } catch (error) {
-        console.error('Error de conexión al agregar canción:', error);
-        alert('Error de conexión con el servidor al agregar la canción.');
-    }
-}
-
-// Note: getSongFormData and fillForm are helper functions often used with a dedicated form for editing
-// For simplicity, I'm keeping them as is, but in a real app, you might have a modal for edit.
-function getSongFormData() {
-    return {
-        title: document.getElementById('title').value,
-        artist: document.getElementById('artist').value,
-        album: document.getElementById('album').value,
-        year: parseInt(document.getElementById('year').value),
-        link: document.getElementById('link').value,
-    };
-}
-
-function fillForm(data) {
-    document.getElementById('title').value = data.title;
-    document.getElementById('artist').value = data.artist;
-    document.getElementById('album').value = data.album;
-    document.getElementById('year').value = data.year;
-    document.getElementById('link').value = data.link;
-}
-
-async function editSong(id) {
-    try {
-        const res = await fetch(`${API_URL}/songs.php`);
-        const songs = await res.json();
-        const songToEdit = songs.find(s => s.id === id);
-
-        if (!songToEdit) {
-            alert('Canción no encontrada para editar.');
-            return;
-        }
-
-        // Fill the form with the song data for editing
-        fillForm(songToEdit);
-
-        // A more robust UI for editing would involve a modal or a dedicated edit form
-        // For now, we'll use a prompt for the user to confirm changes after filling the form
-        const confirmEdit = confirm('Los datos de la canción se han cargado en el formulario. Edita los campos y luego haz clic en "Agregar" para actualizar. ¿Deseas continuar?');
-        
-        if (!confirmEdit) {
-            // Clear form if user cancels
-            document.getElementById('title').value = '';
-            document.getElementById('artist').value = '';
-            document.getElementById('album').value = '';
-            document.getElementById('year').value = '';
-            document.getElementById('link').value = '';
-            return;
-        }
-
-        // To actually update, you'd need a separate "Update" button or modify the "Add" button's behavior
-        // For this example, I'll simulate the update after they click "Agregar"
-        // In a real app, you'd likely disable the "Add" button and enable an "Update" button with the ID.
-        // For simplicity, I'll just show the concept of fetching and filling.
-        alert('Edita los campos en el formulario superior y luego haz clic en "Agregar" para guardar los cambios (la función "Agregar" ahora actuará como "Actualizar" para esta canción).');
-        // You'd need to store the ID of the song being edited globally or pass it to addSong
-        // For now, addSong will always add a new song. This is a simplification.
-        // A proper edit flow would involve a separate function for PUT requests.
-        
-        // Let's modify addSong to handle both add and edit based on a global state or a hidden input
-        // For now, I'll just alert that it's loaded for editing.
-        // A better approach would be to have a hidden input for `songIdToEdit` and modify `addSong` to `saveSong`.
-        // I will add a simplified `saveSong` function that handles both add and edit.
-    } catch (error) {
-        console.error('Error al editar canción:', error);
-        alert('Error al obtener los datos de la canción para editar.');
-    }
-}
-
-// Simplified saveSong to handle both add and edit based on a hidden input or global variable
-// This requires a hidden input in your HTML: <input type="hidden" id="songIdToEdit">
-// And modifying the "Agregar" button to call `saveSong()` instead of `addSong()`.
-// I'll update the HTML button to call `saveSong()` and add the hidden input.
-async function saveSong() {
-    const songIdToEdit = document.getElementById('songIdToEdit').value;
+async function saveSong() { // Esta función reemplaza a addSong y manejará también la edición
+    const songIdToEdit = songIdToEditInput.value; // Obtener el ID oculto
     const data = getSongFormData();
 
+    // Validación básica del lado del cliente
     if (!data.title || !data.artist || !data.album || isNaN(data.year) || !data.link) {
         alert('Por favor, completa todos los campos para guardar la canción.');
         return;
@@ -230,9 +127,9 @@ async function saveSong() {
     let method = 'POST';
     let url = `${API_URL}/songs.php`;
 
-    if (songIdToEdit) { // If there's an ID, it's an edit operation
+    if (songIdToEdit) { // Si hay un ID, es una operación de edición (PUT)
         method = 'PUT';
-        url = `${API_URL}/songs.php?id=${songIdToEdit}`;
+        url = `${API_URL}/songs.php?id=${songIdToEdit}`; // Para PUT, el ID generalmente va en la URL
     }
 
     try {
@@ -244,25 +141,19 @@ async function saveSong() {
 
         if (res.ok) {
             alert(songIdToEdit ? 'Canción actualizada exitosamente.' : 'Canción agregada exitosamente.');
-            // Clear form and hidden ID
-            document.getElementById('title').value = '';
-            document.getElementById('artist').value = '';
-            document.getElementById('album').value = '';
-            document.getElementById('year').value = '';
-            document.getElementById('link').value = '';
-            document.getElementById('songIdToEdit').value = ''; // Clear hidden ID
-            loadSongs(); // Reload songs
+            clearForm(); // Limpiar el formulario después de guardar/actualizar
+            loadSongs(); // Recargar canciones para mostrar los cambios
         } else {
             const errorData = await res.json();
             alert(errorData.error || `Error al ${songIdToEdit ? 'actualizar' : 'agregar'} la canción.`);
         }
     } catch (error) {
         console.error(`Error de conexión al ${songIdToEdit ? 'actualizar' : 'agregar'} canción:`, error);
-        alert('Error de conexión con el servidor.');
+        alert('Error de conexión con el servidor al guardar la canción.');
     }
 }
 
-// Modify editSong to set the hidden input and change button text (optional)
+
 async function editSong(id) {
     try {
         const res = await fetch(`${API_URL}/songs.php`);
@@ -274,13 +165,9 @@ async function editSong(id) {
             return;
         }
 
-        fillForm(songToEdit);
-        document.getElementById('songIdToEdit').value = id; // Set the hidden ID
-        // Optional: Change button text to "Actualizar"
-        const saveButton = document.querySelector('#songs button[onclick="saveSong()"]');
-        if (saveButton) {
-            saveButton.textContent = 'Actualizar Canción';
-        }
+        fillForm(songToEdit); // Llenar el formulario con los datos de la canción
+        songIdToEditInput.value = id; // Establecer el ID en el campo oculto
+        saveSongBtn.textContent = 'Actualizar Canción'; // Cambiar texto del botón
 
         alert('Los datos de la canción se han cargado en el formulario. Edita los campos y luego haz clic en "Actualizar Canción".');
 
@@ -302,7 +189,7 @@ async function deleteSong(id) {
 
         if (res.ok) {
             alert('Canción eliminada exitosamente.');
-            loadSongs(); // Reload songs
+            loadSongs(); // Recargar canciones
         } else {
             const errorData = await res.json();
             alert(errorData.error || 'Error al eliminar la canción.');
@@ -311,6 +198,19 @@ async function deleteSong(id) {
         console.error('Error de conexión al eliminar canción:', error);
         alert('Error de conexión con el servidor al eliminar la canción.');
     }
+}
+
+// --- Modal Details Functions ---
+function showDetails(s) {
+    document.getElementById('modalTitle').textContent = s.title;
+    document.getElementById('modalArtist').textContent = s.artist;
+    document.getElementById('modalAlbum').textContent = s.album;
+    document.getElementById('modalYear').textContent = s.year;
+    const linkElement = document.getElementById('modalLink');
+    linkElement.href = s.link;
+    linkElement.textContent = s.link;
+
+    songModal.style.display = 'flex'; // Use flex to center
 }
 
 // --- Modal Close Logic ---
@@ -322,5 +222,16 @@ closeModalBtn.addEventListener('click', () => {
 window.addEventListener('click', (e) => {
     if (e.target === songModal) {
         songModal.style.display = 'none';
+    }
+});
+
+// (Opcional) Listener para resetear el botón si se borran los campos manualmente
+// Considera añadir un botón "Cancelar Edición" si la UI se vuelve más compleja
+titleInput.addEventListener('input', () => {
+    if (titleInput.value === '' && songIdToEditInput.value !== '') {
+        // Si el usuario borra el título y estamos en modo edición,
+        // podría querer cancelar la edición. Podrías añadir un botón de "Cancelar"
+        // o resetear el estado del botón a "Agregar" aquí.
+        // Por ahora, lo dejaremos para cuando se limpie el formulario con clearForm().
     }
 });

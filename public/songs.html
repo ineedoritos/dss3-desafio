@@ -207,14 +207,12 @@
         <h1>Mis Canciones</h1>
         <ul id="songList"></ul>
 
-        <h3>Agregar Canción</h3>
-        <input type="text" id="title" placeholder="Título">
+        <h3>Agregar/Editar Canción</h3> <input type="text" id="title" placeholder="Título">
         <input type="text" id="artist" placeholder="Artista">
         <input type="text" id="album" placeholder="Álbum">
         <input type="number" id="year" placeholder="Año">
         <input type="url" id="link" placeholder="Enlace">
-        <button onclick="addSong()">Agregar</button>
-        <br><br>
+        <input type="hidden" id="songIdToEdit"> <button onclick="saveSong()" id="saveSongBtn">Agregar</button> <br><br>
         <button onclick="logout()">Cerrar sesión</button>
     </div>
 
