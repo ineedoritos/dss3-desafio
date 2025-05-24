@@ -115,14 +115,14 @@ async function saveSong() { // Esta función reemplaza a addSong y manejará tam
     const data = getSongFormData();
 
     // Validación básica del lado del cliente
-    if (!data.title || !data.artist || !data.album || isNaN(data.year) || !data.link) {
+    if (!data.title || !data.artist ) {
         alert('Por favor, completa todos los campos para guardar la canción.');
         return;
     }
-    if (!/^https?:\/\/.+\..+/.test(data.link)) {
-        alert('Por favor, introduce un enlace válido (debe empezar con http:// o https://).');
-        return;
-    }
+if (!/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be|spotify\.com|open\.spotify\.com|baidu\.com)\/.+$/.test(data.link) && data.link) {
+    alert('El enlace debe ser de YouTube, Spotify o Baidu.');
+    return;
+}
 
     let method = 'POST';
     let url = `${API_URL}/songs.php`;
